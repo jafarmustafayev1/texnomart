@@ -2,113 +2,80 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.shortcuts import get_object_or_404
-from .models import Category, Product, Image
-from .serializers import CategorySerializer, ProductSerializer, ImageSerializer
+from .models import Category, Product, Image, Comments
+from .serializers import CategorySerializer, ProductSerializer, ImageSerializer, CommentModelSerializer
+from .permissions import GetOrPostPermission , WorkingDays ,DeleteTwoMinutesPermission
 
 
-class CategoryListCreateView(generics.GenericAPIView):
+
+class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request, *args, **kwargs):
-        categories = self.get_queryset()
-        serializer = self.get_serializer(categories, many=True)
-        return Response(serializer.data)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def perform_create(self, serializer):
+        """Override this method to handle the creation of the category"""
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class CategoryDetailView(generics.GenericAPIView):
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    lookup_field = 'pk'
 
-    def get(self, request, pk, *args, **kwargs):
-        category = get_object_or_404(Category, pk=pk)
-        serializer = self.get_serializer(category)
-        return Response(serializer.data)
+    def perform_destroy(self, instance):
+        """Override this method to handle the deletion of a category"""
+        instance.delete()
 
-    def put(self, request, pk, *args, **kwargs):
-        category = get_object_or_404(Category, pk=pk)
-        serializer = self.get_serializer(category, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    def delete(self, request, pk, *args, **kwargs):
-        category = get_object_or_404(Category, pk=pk)
-        category.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ProductListCreateView(generics.GenericAPIView):
+class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request, *args, **kwargs):
-        products = self.get_queryset()
-        serializer = self.get_serializer(products, many=True)
-        return Response(serializer.data)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def perform_create(self, serializer):
+        """Override this method to handle the creation of a product"""
         product = serializer.save()
 
-        if 'image' in request.FILES:
+        # Handle image creation if it's part of the request
+        image_file = self.request.FILES.get('image')
+        if image_file:
             Image.objects.create(
                 product=product,
-                image=request.FILES['image'],
+                image=image_file,
                 is_primary=True
             )
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class ProductDetailView(generics.GenericAPIView):
+class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    lookup_field = 'pk'
 
-    def get(self, request, pk, *args, **kwargs):
-        product = get_object_or_404(Product, pk=pk)
-        serializer = self.get_serializer(product)
-        return Response(serializer.data)
+    def perform_update(self, serializer):
+        """Override this method to handle the update of a product"""
+        product = serializer.save()
 
-    def put(self, request, pk, *args, **kwargs):
-        product = get_object_or_404(Product, pk=pk)
-        serializer = self.get_serializer(product, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        if 'image' in request.FILES:
+        image_file = self.request.FILES.get('image')
+        if image_file:
             product.images.filter(is_primary=True).delete()
             Image.objects.create(
                 product=product,
-                image=request.FILES['image'],
+                image=image_file,
                 is_primary=True
             )
 
-        return Response(serializer.data)
+    def perform_destroy(self, instance):
+        """Override this method to handle the deletion of a product"""
+        instance.delete()
 
-    def delete(self, request, pk, *args, **kwargs):
-        product = get_object_or_404(Product, pk=pk)
-        product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ImageView(generics.GenericAPIView):
+class ImageView(generics.RetrieveAPIView):
     queryset = Image.objects.all()
 
     def get(self, request, pk, *args, **kwargs):
         image = get_object_or_404(Image, pk=pk)
         image_url = request.build_absolute_uri(image.image.url)
-        return Response({
-            'image_url': image_url
-        }, content_type='image/jpeg')
+        return Response({'image_url': image_url}, content_type='image/jpeg')
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    serializer_class = CommentModelSerializer
+    queryset = Comments.objects.all()

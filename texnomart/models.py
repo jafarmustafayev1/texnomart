@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -19,4 +20,22 @@ class Image(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='media/products/', null=True, blank=True)
     is_primary = models.BooleanField(default=False)
+
+
+class Comments(models.Model):
+    class RatingChoices(models.IntegerChoices):
+        ONE = 1
+        TWO = 2
+        THREE = 3
+        FOUR = 4
+        FIVE = 5
+
+    body = models.TextField()
+    rating = models.IntegerField(choices=RatingChoices.choices)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_user')
+    created_at = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comment_product')
+    bad_comment = models.TextField()
+    good_comment = models.TextField()
+    image = models.FileField(upload_to = Image, null=True, blank=True)
 

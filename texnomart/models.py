@@ -38,4 +38,5 @@ class Comments(models.Model):
     bad_comment = models.TextField()
     good_comment = models.TextField()
     image = models.FileField(upload_to = Image, null=True, blank=True)
+    rating 
 

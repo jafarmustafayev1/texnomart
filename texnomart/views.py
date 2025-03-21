@@ -30,7 +30,7 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [DeleteTwoMinutesPermission,WorkingDays ,IsAuthenticatedOrReadOnly,]
 
     def perform_create(self, serializer):
         """Override this method to handle the creation of a product"""

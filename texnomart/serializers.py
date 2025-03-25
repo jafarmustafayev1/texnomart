@@ -22,7 +22,14 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name', 'products']
 
-class CommentModelSerializer(serializers.ModelSerializer):
+class CommentSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
+
+    def get_product_name(self, obj):
+        return obj.product.name if hasattr(obj, 'product') and obj.product else None
+
     class Meta:
-        model = Comments
-        fields = '__all__'
+        model = Comment
+        fields = ['id', 'message', 'user', 'product', 'created_at', 'image', 'bad_comment', 'good_comment', 'rating',
+                  'product_name']
+        read_only_fields = ['product_name', 'created_at']

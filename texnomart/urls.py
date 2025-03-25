@@ -14,4 +14,6 @@ urlpatterns = [
     path('permissions/', permissions.WorkingDays, name='permission'),
     path('comment-list/', views.CommentListCreateView.as_view(), name='comment-list-create'),
     path('custom-token/',customobtaintoken.CustomAuthToken.as_view(),name='custom-token'),
+    path('login/', views.LoginJWTView.as_view(), name='login'),
+    path('logout/', views.LogoutJWTView.as_view(), name='logout'),
 ]

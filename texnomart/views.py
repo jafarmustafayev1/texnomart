@@ -79,3 +79,56 @@ class ImageView(generics.RetrieveAPIView):
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentModelSerializer
     queryset = Comments.objects.all()
+
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = User.objects.filter(username=username).first()
+        if user and user.check_password(password):
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=status.HTTP_200_OK)
+        return Response({"detail": "Invalid login or password"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            request.user.auth_token.delete()
+            return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        return Response({"detail": "User is not authenticated."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginJWTView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = User.objects.filter(username=username).first()
+        if user and user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access_token': str(refresh.access_token),
+                'refresh_token': str(refresh),
+            }, status=status.HTTP_200_OK)
+        return Response({"detail": "Invalid login or password"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutJWTView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
